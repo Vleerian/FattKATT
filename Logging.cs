@@ -1,9 +1,7 @@
-using System;
-
 using Spectre.Console;
 
 /*
-DAMOCLES 
+Copyright 2022 Vleerian R.
 
 MIT LICENSE
 
