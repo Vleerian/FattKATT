@@ -90,11 +90,11 @@ while (!Verified)
     }
 }
 
-PollSpeed = AnsiConsole.Prompt(new TextPrompt<int>("How long should KATT wait between NS API requests? (Default 750)")
+PollSpeed = AnsiConsole.Prompt(new TextPrompt<int>("How many miliseconds should KATT wait between NS API requests? ")
     .DefaultValue(750)
     .ValidationErrorMessage("[red]Invalid poll speed.[/]")
     .Validate(s => s switch {
-        < 600 => ValidationResult.Error("[red]Poll speed too low. Minimum 0.6[/]"),
+        < 600 => ValidationResult.Error("[red]Poll speed too low. Minimum 600[/]"),
         _ => ValidationResult.Success(),
         })
     );
