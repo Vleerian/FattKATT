@@ -28,7 +28,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 #endregion
 
-const string VersionNumber = "1.0";
+const string VersionNumber = "1.1";
 
 HttpClient client = new();
 client.DefaultRequestHeaders.Add("User-Agent", $"FatKATT/{VersionNumber} (By 20XX, Atagait@hotmail.com)");
@@ -58,15 +58,21 @@ AnsiConsole.WriteLine("|  |  |  |  |  |  |  |  |  |  |  |");
 AnsiConsole.WriteLine($"FatKATT Version {VersionNumber}.");
 AnsiConsole.WriteLine($"This software is provided as-is, without warranty of any kind.");
 
-AnsiConsole.WriteLine("For the purpose of API compliance, KATT requires your nation to inform NS Admin who is using it.");
+AnsiConsole.WriteLine("FatKATT requires your nation to inform NS Admin who is using it.");
+
 bool Verified = false;
 string Nation_Name;
 while (!Verified)
 {
-    Nation_Name = AnsiConsole.Ask<string>("Please provide your [green]nation[/]: ");
+    //Nation_Name = AnsiConsole.Ask<string>("Please provide your [green]nation[/]: ");
+    Nation_Name = "20XX";
     NationData Nation;
     try {
-        Nation = MakeXmlReq<NationData>($"https://www.nationstates.net/cgi-bin/api.cgi?nation={Sanitize(Nation_Name)}");
+        var r = await MakeReq($"https://www.nationstates.net/cgi-bin/api.cgi?nation={Sanitize(Nation_Name)}");
+        int rl = CheckRatelimit(r);
+        if ( rl > 10 )
+            Logger.Warning($"The API has recieved {rl} requests from you.");
+        Nation = BetterDeserialize<NationData>(await r.Content.ReadAsStringAsync());
         if(Nation == null)
         {
             Logger.Error($"{Nation_Name} does not exist.");
@@ -77,17 +83,9 @@ while (!Verified)
         Logger.Error($"Failed to fetch data for nation {Nation_Name}", e);
         return;
     }
-    Verified = NSVerify(Nation_Name);
-    if(Verified)
-    {
-        client.DefaultRequestHeaders.Remove("User-Agent");
-        client.DefaultRequestHeaders.Add("User-Agent", $"FatKATT/{VersionNumber} (By 20XX, Atagait@hotmail.com - In Use by {Nation_Name})");
-        Logger.Info($"{Nation.fullname} verified.");
-    }
-    else
-    {
-        Logger.Error("Failed verification.");
-    }
+    client.DefaultRequestHeaders.Remove("User-Agent");
+    client.DefaultRequestHeaders.Add("User-Agent", $"FatKATT/{VersionNumber} (By 20XX, Atagait@hotmail.com - In Use by {Nation_Name})");
+    Logger.Info($"You have identified as {Nation.fullname}.");
 }
 
 PollSpeed = AnsiConsole.Prompt(new TextPrompt<int>("How many miliseconds should KATT wait between NS API requests? ")
@@ -126,7 +124,10 @@ List<(int timestamp, string trigger)> Sorted_Triggers = new();
 foreach (string trigger in Triggers)
 {
     try{
-        var Region = MakeXmlReq<RegionData>($"https://www.nationstates.net/cgi-bin/api.cgi?region={trigger}&q=lastupdate+name");
+        var req = await MakeReq($"https://www.nationstates.net/cgi-bin/api.cgi?region={trigger}&q=lastupdate+name");
+        int rl = CheckRatelimit(req);
+
+        var Region = BetterDeserialize<RegionData>(await req.Content.ReadAsStringAsync());
         if(Region == null)
         {
             Logger.Warning($"{trigger} does not exist.");
@@ -147,7 +148,7 @@ foreach (string trigger in Triggers)
 }
 Sorted_Triggers.Sort((x, y) => x.timestamp.CompareTo(y.timestamp));
 
-AnsiConsole.Progress()
+await AnsiConsole.Progress()
     .AutoClear(false)
     .AutoRefresh(true)
     .HideCompleted(false)
@@ -156,7 +157,7 @@ AnsiConsole.Progress()
         new ProgressBarColumn(),
         new SpinnerColumn()
     })
-    .Start(ctx => {
+    .StartAsync(async ctx => {
     Dictionary<string, ProgressTask> Tasks = new();
     foreach ( var trigger in Sorted_Triggers )
         Tasks.Add(trigger.trigger, ctx.AddTask(trigger.trigger, maxValue: 1.0));
@@ -167,10 +168,26 @@ AnsiConsole.Progress()
         {
             RegionData Region;
             try {
-                Region = MakeXmlReq<RegionData>($"https://www.nationstates.net/cgi-bin/api.cgi?region={trigger.trigger}&q=lastupdate+name");
+                var req = await MakeReq($"https://www.nationstates.net/cgi-bin/api.cgi?region={trigger.trigger}&q=lastupdate+name");
+                // Error handling for rate limit being exceeded
+                if(req.StatusCode == HttpStatusCode.TooManyRequests)
+                {
+                    int RetAfter = Int32.Parse(req.Headers.GetValues("X-Retry-After").First());
+                    Logger.Warning($"Rate limit exceeded. Sleeping for {RetAfter*2}");
+                    Thread.Sleep(RetAfter*2);
+                    break;
+                }
+                Region = BetterDeserialize<RegionData>(await req.Content.ReadAsStringAsync());
             }
-            catch ( HttpRequestException)
+            catch ( HttpRequestException e )
             {
+                // Error handling for rate limit being exceeded, in the case that an exception is thrown
+                if(e.StatusCode == HttpStatusCode.TooManyRequests)
+                {
+                    Logger.Warning("Rate limit exceeded. Sleeping for 30 seconds.");
+                    Thread.Sleep(30000);
+                    break;
+                }
                 Logger.Warning("Error loading region data - trying again.");
                 break;
             }
@@ -188,6 +205,15 @@ AnsiConsole.Progress()
 
 Logger.Info("All targets have updated, shutting down.");
 AnsiConsole.Ask<bool>("Press ENTER to continue.");
+
+/// <summary>
+/// This method checks the X-ratelimit-requests-seen header and returns the value
+/// </summary>
+int CheckRatelimit(HttpResponseMessage r)
+{
+    string strRatelimitSeen = r.Headers.GetValues("X-ratelimit-requests-seen").First();
+    return Int32.Parse(strRatelimitSeen);
+}
 
 /// <summary>
 /// I am told that a shocking number of people do not have their system time properly set
@@ -209,32 +235,22 @@ int CurrentTimestamp()
 string Sanitize(string text) => text.ToLower().Replace(' ', '_');
 
 /// <summary>
-/// This method waits 750ms, then makes a request returning the response as a string
+/// This method waits the delay set by the program, then makes a request
 /// <param name="url">The URL to request from</param>
 /// <returns>The return from the request.</returns>
 /// </summary>
-string MakeReq(string url) {
+async Task<HttpResponseMessage> MakeReq(string url) {
     System.Threading.Thread.Sleep(PollSpeed);
-    return client.GetStringAsync(url).GetAwaiter().GetResult();
+    return await client.GetAsync(url);
 }
 
 /// <summary>
-/// This method waits 750ms, then makes a request and attempts to parse it to XML
+/// This method makes deserializing XML less painful
 /// <param name="url">The URL to request from</param>
 /// <returns>The parsed return from the request.</returns>
 /// </summary>
-T MakeXmlReq<T>(string url) =>
-    (T)new XmlSerializer(typeof(T))!.Deserialize(new StringReader(MakeReq(url)))!;
-
-bool NSVerify(string nation)
-{
-    AnsiConsole.WriteLine("Please proceed to https://www.nationstates.net/page=verify_login, copy the code, and enter it in.");
-    string code = AnsiConsole.Ask<string>("Login Verification [green]Code[/]: ");
-    string resp = MakeReq($"https://www.nationstates.net/cgi-bin/api.cgi?a=verify&nation={Nation_Name}&checksum={code}");
-    if(resp.Trim() != "1")
-        return false;
-    return true;
-}
+T BetterDeserialize<T>(string XML) =>
+    (T)new XmlSerializer(typeof(T))!.Deserialize(new StringReader(XML))!;
 
 [Serializable, XmlRoot("REGION")]
 public class RegionData
