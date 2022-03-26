@@ -64,8 +64,7 @@ bool Verified = false;
 string Nation_Name;
 while (!Verified)
 {
-    //Nation_Name = AnsiConsole.Ask<string>("Please provide your [green]nation[/]: ");
-    Nation_Name = "20XX";
+    Nation_Name = AnsiConsole.Ask<string>("Please provide your [green]nation[/]: ");
     NationData Nation;
     try {
         var r = await MakeReq($"https://www.nationstates.net/cgi-bin/api.cgi?nation={Sanitize(Nation_Name)}");
