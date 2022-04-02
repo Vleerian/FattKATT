@@ -28,7 +28,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 #endregion
 
-const string VersionNumber = "1.1";
+const string VersionNumber = "1.1.1";
 
 HttpClient client = new();
 client.DefaultRequestHeaders.Add("User-Agent", $"FatKATT/{VersionNumber} (By 20XX, Atagait@hotmail.com)");
@@ -60,32 +60,27 @@ AnsiConsole.WriteLine($"This software is provided as-is, without warranty of any
 
 AnsiConsole.WriteLine("FatKATT requires your nation to inform NS Admin who is using it.");
 
-bool Verified = false;
-string Nation_Name;
-while (!Verified)
-{
-    Nation_Name = AnsiConsole.Ask<string>("Please provide your [green]nation[/]: ");
-    NationData Nation;
-    try {
-        var r = await MakeReq($"https://www.nationstates.net/cgi-bin/api.cgi?nation={Sanitize(Nation_Name)}");
-        int rl = CheckRatelimit(r);
-        if ( rl > 10 )
-            Logger.Warning($"The API has recieved {rl} requests from you.");
-        Nation = BetterDeserialize<NationData>(await r.Content.ReadAsStringAsync());
-        if(Nation == null)
-        {
-            Logger.Error($"{Nation_Name} does not exist.");
-            return;
-        }
-    } catch (HttpRequestException e)
+string Nation_Name = AnsiConsole.Ask<string>("Please provide your [green]nation[/]: ");
+NationData Nation;
+try {
+    var r = await MakeReq($"https://www.nationstates.net/cgi-bin/api.cgi?nation={Sanitize(Nation_Name)}");
+    int rl = CheckRatelimit(r);
+    if ( rl > 10 )
+        Logger.Warning($"The API has recieved {rl} requests from you.");
+    Nation = BetterDeserialize<NationData>(await r.Content.ReadAsStringAsync());
+    if(Nation == null)
     {
-        Logger.Error($"Failed to fetch data for nation {Nation_Name}", e);
+        Logger.Error($"{Nation_Name} does not exist.");
         return;
     }
-    client.DefaultRequestHeaders.Remove("User-Agent");
-    client.DefaultRequestHeaders.Add("User-Agent", $"FatKATT/{VersionNumber} (By 20XX, Atagait@hotmail.com - In Use by {Nation_Name})");
-    Logger.Info($"You have identified as {Nation.fullname}.");
+} catch (HttpRequestException e)
+{
+    Logger.Error($"Failed to fetch data for nation {Nation_Name}", e);
+    return;
 }
+client.DefaultRequestHeaders.Remove("User-Agent");
+client.DefaultRequestHeaders.Add("User-Agent", $"FatKATT/{VersionNumber} (By 20XX, Atagait@hotmail.com - In Use by {Nation_Name})");
+Logger.Info($"You have identified as {Nation.fullname}.");
 
 PollSpeed = AnsiConsole.Prompt(new TextPrompt<int>("How many miliseconds should KATT wait between NS API requests? ")
     .DefaultValue(750)
