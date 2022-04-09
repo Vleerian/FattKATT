@@ -99,14 +99,14 @@ while(Triggers == null)
     {
         File.WriteAllText("./trigger_list.txt", "#trigger_list.txt\n#format is 1 trigger region per line.\n#lines can be commented out with hash marks.");
         Logger.Info("File does not exist. Template created, please populate trigger_list.txt with list of trigger regions.");
-        AnsiConsole.Ask<bool>("Press ENTER to continue.");
+        Console.WriteLine("Press ENTER to continue."); Console.ReadLine();
     }
     string[] triggers = File.ReadAllLines("./trigger_list.txt");
     triggers = triggers.Where(L => !L.StartsWith("#")).ToArray();
     if(triggers.Length == 0)
     {
         Logger.Error("Trigger list is empty. Please populate trigger_list.txt with list of trigger regions.");
-        AnsiConsole.Ask<bool>("Press ENTER to continue.");
+        Console.WriteLine("Press ENTER to continue."); Console.ReadLine();
     }
     Triggers = triggers.ToList();
 }
@@ -205,7 +205,7 @@ await AnsiConsole.Progress()
 });
 
 Logger.Info("All targets have updated, shutting down.");
-AnsiConsole.Ask<bool>("Press ENTER to continue.");
+Console.WriteLine("Press ENTER to continue."); Console.ReadLine();
 
 /// <summary>
 /// This method checks the X-ratelimit-requests-seen header and returns the value
