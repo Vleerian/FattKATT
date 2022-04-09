@@ -121,6 +121,13 @@ foreach (string trigger in Triggers)
         var req = await MakeReq($"https://www.nationstates.net/cgi-bin/api.cgi?region={trigger}&q=lastupdate+name");
         int rl = CheckRatelimit(req);
 
+        if(req.StatusCode != HttpStatusCode.OK)
+        {
+            Logger.Error($"Failed to fetch nation data for {trigger}");
+            Triggers.Remove(trigger);
+            continue;
+        }
+
         var Region = BetterDeserialize<RegionData>(await req.Content.ReadAsStringAsync());
         if(Region == null)
         {
