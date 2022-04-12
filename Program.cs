@@ -111,6 +111,10 @@ while(Triggers == null)
     Triggers = triggers.ToList();
 }
 
+bool Beep = AnsiConsole.Prompt(new SelectionPrompt<string>()
+    .Title("Enable Beeping?")
+    .AddChoices(new[] { "Yes", "No" })) == "Yes" ;
+
 var connection = new NtpConnection("pool.ntp.org");
 
 int current_time = CurrentTimestamp();
@@ -196,7 +200,8 @@ await AnsiConsole.Progress()
             if(trigger.timestamp != Region.lastupdate)
             {
                 AnsiConsole.MarkupLine($"[red]!!![/] - [yellow]UPDATE DETECTED IN {trigger.trigger}[/] - [red]!!![/]");
-                Console.Beep();
+                if(Beep)
+                    Console.Beep();
                 Tasks[trigger.trigger].Increment(1.0);
                 Sorted_Triggers.Remove(trigger);
                 break;
