@@ -20,7 +20,7 @@ It will then ask how often it should request data from the NationStates API - it
 
 ## Running FattKATT
 
-I suggest running [url=https://github.com/Vleerian/FattKATT/releases/latest]The latest release[/url]
+I suggest running [The latest release](https://github.com/Vleerian/FattKATT/releases/latest)
 
 If you want to run directly from source, you will need the Dotnet 6.0 SDK in order to build the script.
 
@@ -31,7 +31,7 @@ You can build it by running
 
 The following people provided key contributions during the initial development process:
 
-* The original version of KATT was programmed by [url=https://github.com/Khronion]Khronion[/url]
+* The original version of KATT was programmed by [Khronion](https://github.com/Khronion)
 
 The following people also helped review and test KATT:
 
