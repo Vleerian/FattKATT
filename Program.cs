@@ -196,6 +196,7 @@ await AnsiConsole.Progress()
             if(trigger.timestamp != Region.lastupdate)
             {
                 AnsiConsole.MarkupLine($"[red]!!![/] - [yellow]UPDATE DETECTED IN {trigger.trigger}[/] - [red]!!![/]");
+                Console.Beep();
                 Tasks[trigger.trigger].Increment(1.0);
                 Sorted_Triggers.Remove(trigger);
                 break;
