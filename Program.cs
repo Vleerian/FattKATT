@@ -28,7 +28,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 #endregion
 
-const string VersionNumber = "1.2";
+const string VersionNumber = "1.2.1";
 
 HttpClient client = new();
 client.DefaultRequestHeaders.Add("User-Agent", $"FatKATT/{VersionNumber} (By 20XX, Atagait@hotmail.com)");
@@ -188,14 +188,6 @@ await AnsiConsole.Progress()
             RegionData Region;
             try {
                 var req = await MakeReq($"https://www.nationstates.net/cgi-bin/api.cgi?region={trigger.trigger}&q=lastupdate+name");
-                // Error handling for rate limit being exceeded
-                if(req.StatusCode == HttpStatusCode.TooManyRequests)
-                {
-                    int RetAfter = Int32.Parse(req.Headers.GetValues("X-Retry-After").First());
-                    Logger.Warning($"Rate limit exceeded. Sleeping for {RetAfter*2}");
-                    Thread.Sleep(RetAfter*2);
-                    break;
-                }
                 Region = BetterDeserialize<RegionData>(await req.Content.ReadAsStringAsync());
             }
             catch ( HttpRequestException e )
