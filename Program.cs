@@ -116,12 +116,14 @@ bool Beep = AnsiConsole.Prompt(new SelectionPrompt<string>()
     .AddChoices(new[] { "Yes", "No" })) == "Yes" ;
 
 var connection = new NtpConnection("pool.ntp.org");
-
 int current_time = CurrentTimestamp();
+
+Logger.Info("Sorting triggers.");
 List<(int timestamp, string trigger)> Sorted_Triggers = new();
 foreach (string trigger in Triggers)
 {
     try{
+        Logger.Request($"Getting LastUpdate for {trigger}");
         var req = await MakeReq($"https://www.nationstates.net/cgi-bin/api.cgi?region={trigger}&q=lastupdate+name");
         int rl = CheckRatelimit(req);
 
@@ -149,6 +151,14 @@ foreach (string trigger in Triggers)
     {
         Logger.Warning($"Failed to fetch data on {trigger} - removing.", e);
         Triggers.Remove(trigger);
+    }
+    catch (InvalidOperationException e)
+    {
+        Logger.Error("Unknown error accessing nation data. An error log has been generated.");
+        string Out = "TRIGGERS: " + String.Join(", ", Triggers);
+        Out += "\n"+e.ToString();
+        Out += "\n"+e.StackTrace;
+        File.AppendText("\n------ BEGIN\n"+Out);
     }
 }
 Sorted_Triggers.Sort((x, y) => x.timestamp.CompareTo(y.timestamp));
