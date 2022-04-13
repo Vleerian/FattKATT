@@ -101,8 +101,8 @@ while(Triggers == null)
         Logger.Info("File does not exist. Template created, please populate trigger_list.txt with list of trigger regions.");
         Console.WriteLine("Press ENTER to continue."); Console.ReadLine();
     }
-    string[] triggers = File.ReadAllLines("./trigger_list.txt");
-    triggers = triggers.Where(L => !L.StartsWith("#")).ToArray();
+    string[] triggers = File.ReadAllText("./trigger_list.txt").Split("\n", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+    triggers = triggers.Select(L=>L.Trim().Replace(' ','_')).Where(L => !L.StartsWith("#")).ToArray();
     if(triggers.Length == 0)
     {
         Logger.Error("Trigger list is empty. Please populate trigger_list.txt with list of trigger regions.");
