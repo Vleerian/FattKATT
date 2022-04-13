@@ -163,14 +163,18 @@ await AnsiConsole.Progress()
         new SpinnerColumn()
     })
     .StartAsync(async ctx => {
-    Dictionary<string, ProgressTask> Tasks = new();
-    foreach ( var trigger in Sorted_Triggers )
-        Tasks.Add(trigger.trigger, ctx.AddTask(trigger.trigger, maxValue: 1.0));
     
     while(!ctx.IsFinished)
     {
+        ProgressTask ProgTask = default;
+        string trigRegion = "none";
         foreach ( var trigger in Sorted_Triggers )
         {
+            if(trigger.trigger != trigRegion)
+            {
+                ProgTask = ctx.AddTask(trigger.trigger, maxValue: 1.0);
+                trigRegion = trigger.trigger;
+            }
             RegionData Region;
             try {
                 var req = await MakeReq($"https://www.nationstates.net/cgi-bin/api.cgi?region={trigger.trigger}&q=lastupdate+name");
@@ -202,7 +206,7 @@ await AnsiConsole.Progress()
                 AnsiConsole.MarkupLine($"[red]!!![/] - [yellow]UPDATE DETECTED IN {trigger.trigger}[/] - [red]!!![/]");
                 if(Beep)
                     Console.Beep();
-                Tasks[trigger.trigger].Increment(1.0);
+                ProgTask.Increment(1.0);
                 Sorted_Triggers.Remove(trigger);
                 break;
             }
