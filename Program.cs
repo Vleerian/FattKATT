@@ -175,45 +175,37 @@ await AnsiConsole.Progress()
         new SpinnerColumn()
     })
     .StartAsync(async ctx => {
-    
-    while(!ctx.IsFinished)
+
+    ProgressTask ProgTask = ctx.AddTask("Waiting for next update...", maxValue: Sorted_Triggers.Count);
+    while(Sorted_Triggers.Count > 0)
     {
-        ProgressTask ProgTask = default;
-        string trigRegion = "none";
-        foreach ( var trigger in Sorted_Triggers )
+        var Trigger = Sorted_Triggers.First();
+        ProgTask.Description = $"Waiting for {Trigger.trigger}";
+        RegionData Region;
+        try {
+            var req = await MakeReq($"https://www.nationstates.net/cgi-bin/api.cgi?region={Trigger.trigger}&q=lastupdate+name");
+            Region = BetterDeserialize<RegionData>(await req.Content.ReadAsStringAsync());
+        }
+        catch ( HttpRequestException e )
         {
-            if(trigger.trigger != trigRegion)
+            // Error handling for rate limit being exceeded, in the case that an exception is thrown
+            if(e.StatusCode == HttpStatusCode.TooManyRequests)
             {
-                ProgTask = ctx.AddTask(trigger.trigger, maxValue: 1.0);
-                trigRegion = trigger.trigger;
+                Logger.Warning("Rate limit exceeded. Sleeping for 5 seconds.");
+                Thread.Sleep(5000);
             }
-            RegionData Region;
-            try {
-                var req = await MakeReq($"https://www.nationstates.net/cgi-bin/api.cgi?region={trigger.trigger}&q=lastupdate+name");
-                Region = BetterDeserialize<RegionData>(await req.Content.ReadAsStringAsync());
-            }
-            catch ( HttpRequestException e )
-            {
-                // Error handling for rate limit being exceeded, in the case that an exception is thrown
-                if(e.StatusCode == HttpStatusCode.TooManyRequests)
-                {
-                    Logger.Warning("Rate limit exceeded. Sleeping for 30 seconds.");
-                    Thread.Sleep(30000);
-                    break;
-                }
-                Logger.Warning("Error loading region data - trying again.");
-                break;
-            }
-            
-            if(trigger.timestamp != Region.lastupdate)
-            {
-                AnsiConsole.MarkupLine($"[red]!!![/] - [yellow]UPDATE DETECTED IN {trigger.trigger}[/] - [red]!!![/]");
-                if(Beep)
-                    Console.Beep();
-                ProgTask.Increment(1.0);
-                Sorted_Triggers.Remove(trigger);
-                break;
-            }
+            else
+                Logger.Warning("Error loading region data ");
+            break;
+        }
+
+        if(Trigger.timestamp != Region.lastupdate)
+        {
+            AnsiConsole.MarkupLine($"[red]!!![/] - [yellow]UPDATE DETECTED IN {Trigger.trigger}[/] - [red]!!![/]");
+            if(Beep)
+                Console.Beep();
+            ProgTask.Increment(1.0);
+            Sorted_Triggers.Remove(Trigger);
         }
     }
 });
