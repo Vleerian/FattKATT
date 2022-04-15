@@ -161,7 +161,9 @@ foreach (string trigger in Triggers)
         File.AppendText("\n------ BEGIN\n"+Out);
     }
 }
+
 Sorted_Triggers.Sort((x, y) => x.timestamp.CompareTo(y.timestamp));
+Logger.Info($"Sorted {Sorted_Triggers.Count} triggers.");
 
 await AnsiConsole.Progress()
     .AutoClear(false)
