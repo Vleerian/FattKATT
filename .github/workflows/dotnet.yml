@@ -17,11 +17,11 @@ jobs:
       uses: actions/setup-dotnet@v2
       with:
         dotnet-version: 6.0.x
-    - name: Publish
+    - name: PublishWin64
       run: dotnet publish --runtime win-x64 --self-contained -p:Configuration=Release /p:DebugType=None /p:DebugSymbols=false -o builds/
-    - name: Upload a Build Artifact
+    - name: UploadWin64
       uses: actions/upload-artifact@v2.2.2
       with:
         name: website
-        path: FattKATT/builds/*
+        path: builds/*
         if-no-files-found: error
