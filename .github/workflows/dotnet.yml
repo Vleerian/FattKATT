@@ -22,6 +22,24 @@ jobs:
     - name: UploadWin64
       uses: actions/upload-artifact@v2.2.2
       with:
-        name: website
+        name: FattKATT-Win64
+        path: builds/*
+        if-no-files-found: error
+    - name: Clear EXE
+      run: rm -r builds/
+    - name: PublishOSX
+      run: dotnet publish --runtime osx-x64 --self-contained -p:Configuration=Release /p:DebugType=None /p:DebugSymbols=false -o builds/
+    - name: UploadOsx64
+      uses: actions/upload-artifact@v2.2.2
+      with:
+        name: FattKATT-Osx64
+        path: builds/*
+        if-no-files-found: error
+    - name: PublishLinux64
+      run: dotnet publish --runtime linux-x64 --self-contained -p:Configuration=Release /p:DebugType=None /p:DebugSymbols=false -o builds/
+    - name: UploadLinux64
+      uses: actions/upload-artifact@v2.2.2
+      with:
+        name: FattKATT-Linux64
         path: builds/*
         if-no-files-found: error
