@@ -1,8 +1,10 @@
 # FattKATT
 ![GitHub Workflow Status (branch)](https://img.shields.io/github/workflow/status/vleerian/fattkatt/multiplatPublish/main?style=for-the-badge) ![GitHub](https://img.shields.io/github/license/vleerian/fattkatt?style=for-the-badge) ![GitHub issues](https://img.shields.io/github/issues/vleerian/fattkatt?style=for-the-badge)
 
-A fancy C# port of
-*Khron and Atagait's Trigger Tool*
+<p align="center">
+	<img src="/assets/logo.png"><br>
+  A fancy C# port of Khron and Atagait's Trigger Tool
+</p>
 
 ## About
 
