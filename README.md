@@ -1,5 +1,5 @@
 # FattKATT
-[![.NET](https://github.com/Vleerian/FattKATT/actions/workflows/dotnet.yml/badge.svg)](https://github.com/Vleerian/FattKATT/actions/workflows/dotnet.yml)
+![GitHub Workflow Status (branch)](https://img.shields.io/github/workflow/status/vleerian/fattkatt/multiplatPublish/main?style=for-the-badge) ![GitHub](https://img.shields.io/github/license/vleerian/fattkatt?style=for-the-badge) ![GitHub issues](https://img.shields.io/github/issues/vleerian/fattkatt?style=for-the-badge)
 
 A fancy C# port of
 *Khron and Atagait's Trigger Tool*
