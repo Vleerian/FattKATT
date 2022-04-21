@@ -196,8 +196,6 @@ await AnsiConsole.Progress()
             if(req.StatusCode == HttpStatusCode.NotFound)
             {
                 Logger.Warning("Target cannot be found, skipping");
-                if(Beep)
-                    Console.Beep();
                 ProgTask.Increment(1.0);
                 Sorted_Triggers.Remove(Trigger);
             }
