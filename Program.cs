@@ -1,6 +1,7 @@
 ﻿using System.Net;
-using System.Net.Sockets;
+using System.Net.Http.Json;
 using System.Xml.Serialization;
+using System.Text.Json.Serialization;
 using Spectre.Console;
 using FatKATT;
 using NtpClient;
@@ -25,7 +26,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 #endregion
 
-const string VersionNumber = "1.2.2";
+const string VersionNumber = "1.2.3";
 
 HttpClient client = new();
 client.DefaultRequestHeaders.Add("User-Agent", $"FatKATT/{VersionNumber} (By 20XX, Atagait@hotmail.com)");
@@ -54,6 +55,20 @@ AnsiConsole.WriteLine("|  |  |  |  |  |  |  |  |  |  |  |");
 AnsiConsole.WriteLine("|  |  |  |  |  |  |  |  |  |  |  |");
 AnsiConsole.WriteLine($"FatKATT Version {VersionNumber}.");
 AnsiConsole.WriteLine($"This software is provided as-is, without warranty of any kind.");
+
+// Fetch version information
+Logger.Request("Checking for newer versions...");
+var gitReq = await MakeReq("https://api.github.com/repos/vleerian/fattkatt/releases/latest");
+var versionInfo = await gitReq.Content.ReadFromJsonAsync<GithubAPI>();
+int result = CompareVersion(versionInfo!.Tag_Name!, VersionNumber);
+switch(result)
+{
+    case 0: Logger.Info("A newer version of FattKATT has been released https://github.com/Vleerian/FattKATT/releases/latest"); break;
+    case 1: Logger.Warning("You are using a bleeding-edge build of FattKATT, it is reccommended to use the latest official release."); break;
+    case 2: Logger.Info("FattKATT is up to date!"); break;
+    case 3: Logger.Warning("Invalid semantic versioning - it is recommended to use the latest official release."); break;
+    case 4: Logger.Warning("You are using an experimental build, here be dragons."); break;
+}
 
 AnsiConsole.WriteLine("FatKATT requires your nation to inform NS Admin who is using it.");
 
@@ -216,6 +231,46 @@ Logger.Info("All targets have updated, shutting down.");
 Console.WriteLine("Press ENTER to continue."); Console.ReadLine();
 
 /// <summary>
+/// This method compares two semantic versioning tags to check which is higher
+/// <returns type="int">0 if VerisonA is higher, 
+/// 1 if VersionB is higher.
+/// 2 if they are the same
+/// 3 if there are less than 3 integer parts to the version
+/// 4 if the version parts themselves are invalid</returns>
+/// </summary>
+int CompareVersion(string VersionA, string VersionB)
+{
+    // (StringSplitOptions)3 is shorthand for trim entries and remove empty entries
+    var PartsA = VersionA.Split('.', 3, (StringSplitOptions)3);
+    if(PartsA.Length < 3)
+        return 3;
+    var PartsB = VersionB.Split('.', 3, (StringSplitOptions)3);
+    if(PartsB.Length < 3)
+        return 3;
+    return CompareVersionParts(PartsA, PartsB, 0);
+}
+
+/// <summary>
+/// This method compares parts of thw semantic versioning tags to check which is higher
+/// <returns type="bool">True if VerisonA is higher, false if VersionB is higher</returns>
+/// </summary>
+int CompareVersionParts(string[] PartsA, string[] PartsB, int index)
+{
+    int ResultA, ResultB;
+    if(index >= PartsA.Length)
+        return 2;
+    else if(!Int32.TryParse(PartsA[index], out ResultA))
+        return 4;
+    else if(!Int32.TryParse(PartsB[index], out ResultB))
+        return 4;
+    if(ResultA > ResultB)
+        return 0;
+    else if(ResultA < ResultB)
+        return 1;
+    return CompareVersionParts(PartsA, PartsB, ++index);
+}
+
+/// <summary>
 /// This method checks the X-ratelimit-requests-seen header and returns the value
 /// </summary>
 int CheckRatelimit(HttpResponseMessage r)
@@ -260,6 +315,22 @@ async Task<HttpResponseMessage> MakeReq(string url) {
 /// </summary>
 T BetterDeserialize<T>(string XML) =>
     (T)new XmlSerializer(typeof(T))!.Deserialize(new StringReader(XML))!;
+
+[Serializable]
+public class GithubAPI
+{
+    [JsonPropertyName("tag_name")]
+    public string? Tag_Name { get; init; }
+
+    [JsonPropertyName("name")]
+    public string? Release_Name { get; init; }
+
+    [JsonPropertyName("published_at")]
+    public string? published { get; init; }
+
+    [JsonIgnore]
+    public DateTime Published => DateTime.Parse(published);
+}
 
 [Serializable, XmlRoot("REGION")]
 public class RegionData
