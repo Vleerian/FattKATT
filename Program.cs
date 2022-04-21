@@ -126,16 +126,14 @@ foreach (string trigger in Triggers)
 
         if(req.StatusCode != HttpStatusCode.OK)
         {
-            Logger.Error($"Failed to fetch nation data for {trigger}");
-            Triggers.Remove(trigger);
+            Logger.Error($"Failed to fetch data for {trigger}. It will not be checked for updates.");
             continue;
         }
 
         var Region = BetterDeserialize<RegionData>(await req.Content.ReadAsStringAsync());
         if(Region == null)
         {
-            Logger.Warning($"{trigger} does not exist.");
-            Triggers.Remove(trigger);
+            Logger.Warning($"{trigger} does not exist.. It will not be checked for updates.");
         }
         else if (current_time - Region.lastupdate < 7200)
         {
@@ -146,8 +144,7 @@ foreach (string trigger in Triggers)
     }
     catch (HttpRequestException e)
     {
-        Logger.Warning($"Failed to fetch data on {trigger} - removing.", e);
-        Triggers.Remove(trigger);
+        Logger.Warning($"Failed to fetch data on {trigger}. It will not be checked for updates.", e);
     }
     catch (InvalidOperationException e)
     {
@@ -181,6 +178,14 @@ await AnsiConsole.Progress()
         RegionData Region;
         try {
             var req = await MakeReq($"https://www.nationstates.net/cgi-bin/api.cgi?region={Trigger.trigger}&q=lastupdate+name");
+            if(req.StatusCode == HttpStatusCode.NotFound)
+            {
+                Logger.Warning("Target cannot be found, skipping");
+                if(Beep)
+                    Console.Beep();
+                ProgTask.Increment(1.0);
+                Sorted_Triggers.Remove(Trigger);
+            }
             Region = BetterDeserialize<RegionData>(await req.Content.ReadAsStringAsync());
         }
         catch ( HttpRequestException e )
