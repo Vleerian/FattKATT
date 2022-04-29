@@ -3,8 +3,12 @@ using System.Net.Http.Json;
 using System.Xml.Serialization;
 using System.Text.Json.Serialization;
 using Spectre.Console;
-using FatKATT;
 using NtpClient;
+
+using FatKATT;
+using NSDotnet;
+using NSDotnet.Enums;
+using NSDotnet.Models;
 
 #region License
 /*
@@ -26,10 +30,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 #endregion
 
-const string VersionNumber = "1.2.3";
+const string VersionNumber = "1.3";
 
-HttpClient client = new();
-client.DefaultRequestHeaders.Add("User-Agent", $"FatKATT/{VersionNumber} (By 20XX, Atagait@hotmail.com)");
+// Set up NSDotNet
+var API = NSAPI.Instance;
+API.UserAgent = $"FatKATT/{VersionNumber} (By 20XX, Atagait@hotmail.com)";
 int PollSpeed = 750;
 
 AnsiConsole.MarkupLine("[red]██╗  ██╗ █████╗ ████████╗████████╗[/]");
@@ -58,40 +63,45 @@ AnsiConsole.WriteLine($"This software is provided as-is, without warranty of any
 
 // Fetch version information
 Logger.Request("Checking for newer versions...");
-var gitReq = await MakeReq("https://api.github.com/repos/vleerian/fattkatt/releases/latest");
-var versionInfo = await gitReq.Content.ReadFromJsonAsync<GithubAPI>();
-int result = CompareVersion(versionInfo!.Tag_Name!, VersionNumber);
-switch(result)
 {
-    case 0: Logger.Info("A newer version of FattKATT has been released https://github.com/Vleerian/FattKATT/releases/latest"); break;
-    case 1: Logger.Warning("You are using a bleeding-edge build of FattKATT, it is reccommended to use the latest official release."); break;
-    case 2: Logger.Info("FattKATT is up to date!"); break;
-    case 3: Logger.Warning("Invalid semantic versioning - it is recommended to use the latest official release."); break;
-    case 4: Logger.Warning("You are using an experimental build, here be dragons."); break;
+    HttpClient httpClient = new HttpClient();
+    httpClient.DefaultRequestHeaders.Add("User-Agent", $"FattKATT/{VersionNumber} (https://github.com/vleerian/fattkatt)");
+    var gitReq = await httpClient.GetAsync("https://api.github.com/repos/vleerian/fattkatt/releases/latest");
+    var versionInfo = await gitReq.Content.ReadFromJsonAsync<GithubAPI>();
+    int result = CompareVersion(versionInfo!.Tag_Name!, VersionNumber);
+    switch(result)
+    {
+        case 0: Logger.Info("A newer version of FattKATT has been released https://github.com/Vleerian/FattKATT/releases/latest"); break;
+        case 1: Logger.Warning("You are using a bleeding-edge build of FattKATT, it is reccommended to use the latest official release."); break;
+        case 2: Logger.Info("FattKATT is up to date!"); break;
+        case 3: Logger.Warning("Invalid semantic versioning - it is recommended to use the latest official release."); break;
+        case 4: Logger.Warning("You are using an experimental build, here be dragons."); break;
+    }
+    httpClient.Dispose();
 }
 
 AnsiConsole.WriteLine("FatKATT requires your nation to inform NS Admin who is using it.");
 
 string Nation_Name = AnsiConsole.Ask<string>("Please provide your [green]nation[/]: ");
-NationData Nation;
+NationAPI Nation;
 try {
-    var r = await MakeReq($"https://www.nationstates.net/cgi-bin/api.cgi?nation={Sanitize(Nation_Name)}");
+    var r = await API.MakeRequest($"https://www.nationstates.net/cgi-bin/api.cgi?nation={Helpers.SanitizeName(Nation_Name)}");
     int rl = CheckRatelimit(r);
     if ( rl > 10 )
         Logger.Warning($"The API has recieved {rl} requests from you.");
-    Nation = BetterDeserialize<NationData>(await r.Content.ReadAsStringAsync());
-    if(Nation == null)
+    NationAPI? tmp = Helpers.BetterDeserialize<NationAPI>(await r.Content.ReadAsStringAsync());
+    if(tmp == null)
     {
         Logger.Error($"{Nation_Name} does not exist.");
         return;
     }
+    Nation = (NationAPI)tmp;
 } catch (HttpRequestException e)
 {
     Logger.Error($"Failed to fetch data for nation {Nation_Name}", e);
     return;
 }
-client.DefaultRequestHeaders.Remove("User-Agent");
-client.DefaultRequestHeaders.Add("User-Agent", $"FatKATT/{VersionNumber} (By 20XX, Atagait@hotmail.com - In Use by {Nation_Name})");
+API.UserAgent = $"FatKATT/{VersionNumber} (By 20XX, Atagait@hotmail.com - In Use by {Nation_Name})";
 Logger.Info($"You have identified as {Nation.fullname}.");
 
 PollSpeed = AnsiConsole.Prompt(new TextPrompt<int>("How many miliseconds should KATT wait between NS API requests? ")
@@ -131,12 +141,12 @@ var connection = new NtpConnection("pool.ntp.org");
 int current_time = CurrentTimestamp();
 
 Logger.Info("Sorting triggers.");
-List<(int timestamp, string trigger)> Sorted_Triggers = new();
+List<(double timestamp, string trigger)> Sorted_Triggers = new();
 foreach (string trigger in Triggers)
 {
     try{
         Logger.Request($"Getting LastUpdate for {trigger}");
-        var req = await MakeReq($"https://www.nationstates.net/cgi-bin/api.cgi?region={trigger}&q=lastupdate+name");
+        var req = await API.MakeRequest($"https://www.nationstates.net/cgi-bin/api.cgi?region={trigger}&q=lastupdate+name");
         int rl = CheckRatelimit(req);
 
         if(req.StatusCode != HttpStatusCode.OK)
@@ -145,17 +155,20 @@ foreach (string trigger in Triggers)
             continue;
         }
 
-        var Region = BetterDeserialize<RegionData>(await req.Content.ReadAsStringAsync());
-        if(Region == null)
+        RegionAPI? tmp = Helpers.BetterDeserialize<RegionAPI>(await req.Content.ReadAsStringAsync());
+        if(tmp == null)
         {
             Logger.Warning($"{trigger} does not exist.. It will not be checked for updates.");
+            continue;
         }
-        else if (current_time - Region.lastupdate < 7200)
+        RegionAPI Region = (RegionAPI)tmp;
+
+        if (current_time - Region.LastUpdate < 7200)
         {
             Logger.Warning($"{trigger} has already updated.");
         }
         else
-            Sorted_Triggers.Add((Region.lastupdate, trigger));
+            Sorted_Triggers.Add((Region.LastUpdate, trigger));
     }
     catch (HttpRequestException e)
     {
@@ -190,16 +203,17 @@ await AnsiConsole.Progress()
     {
         var Trigger = Sorted_Triggers.First();
         ProgTask.Description = $"Waiting for {Trigger.trigger}";
-        RegionData Region;
+        RegionAPI Region;
         try {
-            var req = await MakeReq($"https://www.nationstates.net/cgi-bin/api.cgi?region={Trigger.trigger}&q=lastupdate+name");
+            await Task.Delay(PollSpeed);
+            var req = await API.MakeRequest($"https://www.nationstates.net/cgi-bin/api.cgi?region={Trigger.trigger}&q=lastupdate");
             if(req.StatusCode == HttpStatusCode.NotFound)
             {
                 Logger.Warning("Target cannot be found, skipping");
                 ProgTask.Increment(1.0);
                 Sorted_Triggers.Remove(Trigger);
             }
-            Region = BetterDeserialize<RegionData>(await req.Content.ReadAsStringAsync());
+            Region = Helpers.BetterDeserialize<RegionAPI>(await req.Content.ReadAsStringAsync());
         }
         catch ( HttpRequestException e )
         {
@@ -214,7 +228,7 @@ await AnsiConsole.Progress()
             break;
         }
 
-        if(Trigger.timestamp != Region.lastupdate)
+        if(Trigger.timestamp != Region.LastUpdate)
         {
             AnsiConsole.MarkupLine($"[red]!!![/] - [yellow]UPDATE DETECTED IN {Trigger.trigger}[/] - [red]!!![/]");
             if(Beep)
@@ -289,31 +303,6 @@ int CurrentTimestamp()
     return (int)t.TotalSeconds;
 }
 
-/// <summary>
-/// This method removes capital letters and converts spaces to underscore
-/// <param name="text">The text to be sanitized</param>
-/// <returns>An all-lowercase string with spaces converted to underscores</returns>
-/// </summary>
-string Sanitize(string text) => text.ToLower().Replace(' ', '_');
-
-/// <summary>
-/// This method waits the delay set by the program, then makes a request
-/// <param name="url">The URL to request from</param>
-/// <returns>The return from the request.</returns>
-/// </summary>
-async Task<HttpResponseMessage> MakeReq(string url) {
-    System.Threading.Thread.Sleep(PollSpeed);
-    return await client.GetAsync(url);
-}
-
-/// <summary>
-/// This method makes deserializing XML less painful
-/// <param name="url">The URL to request from</param>
-/// <returns>The parsed return from the request.</returns>
-/// </summary>
-T BetterDeserialize<T>(string XML) =>
-    (T)new XmlSerializer(typeof(T))!.Deserialize(new StringReader(XML))!;
-
 [Serializable]
 public class GithubAPI
 {
@@ -328,36 +317,4 @@ public class GithubAPI
 
     [JsonIgnore]
     public DateTime Published => DateTime.Parse(published);
-}
-
-[Serializable, XmlRoot("REGION")]
-public class RegionData
-{
-    [XmlAttribute("id")]
-    public string id { get; init; }
-
-    [XmlElement("NAME")]
-    public string name { get; init; }
-
-    [XmlElement("LASTUPDATE")]
-    public int lastupdate { get; init; }
-}
-
-[Serializable, XmlRoot("NATION")]
-public class NationData
-{
-    [XmlAttribute("id")]
-    public string id { get; init; }
-
-    [XmlElement("NAME")]
-    public string name { get; init; }
-
-    [XmlElement("TYPE")]
-    public string type { get; init; }
-
-    [XmlElement("FULLNAME")]
-    public string fullname { get; init; }
-
-    [XmlElement("FLAG")]
-    public string flag { get; init; }
 }
