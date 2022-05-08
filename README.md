@@ -29,8 +29,27 @@ I suggest running [The latest release](https://github.com/Vleerian/FattKATT/rele
 
 If you want to run directly from source, you will need the Dotnet 6.0 SDK in order to build the script.
 
-You can build it by running
-`dotnet build -C Release`
+To build FattKATT you require [NSDotNet](https://github.com/Vleerian/NSDotNet) cloned to the same directory as FattKATT
+```
+git clone https://github.com/Vleerian/NSDotNet.git
+```
+Clone FattKATT
+```
+git clone https://github.com/Vleerian/FattKATT.git
+```
+Because FattKATT publishes single-file executables, it must be buiilt using `dotnet publish`
+For Linux:
+```
+dotnet publish --runtime linux-x64 --self-contained -p:Configuration=Release /p:DebugType=None /p:DebugSymbols=false -o builds/
+```
+For Windows:
+```
+dotnet publish --runtime win-x64 --self-contained -p:Configuration=Release /p:DebugType=None /p:DebugSymbols=false -o builds/
+```
+For OSX:
+```
+dotnet publish --runtime osx-x64 --self-contained -p:Configuration=Release /p:DebugType=None /p:DebugSymbols=false -o builds/
+```
 
 ## Acknowledgments
 
