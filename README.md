@@ -23,6 +23,20 @@ It will then ask how often it should request data from the NationStates API - it
 
 **750ms is the default value (shown in green) and is recommended by the developer. While FattKATT will permit 600ms, it is not recommended, as that can run over the NS API rate limit and result in a 15 minute timeout.**
 
+### CLI Usage
+FattKATT runs in interactive mode by default, however all user-provided inputs can be given when run with the terminal
+- -n or --nation, the nation used for the User-Agent
+- -t or --triggers, a comma-separated listed of triggers the program will use instead of trigger_list.txt
+- -p or --poll-speed, the poll speed used by the program when requesting lastupdate
+- -b or --beep, sets whether or not the terminal will beep when a trigger updates
+For example
+```
+./FattKATT -n testlandia -t banana,NordFerretTon -p 750 -b false
+```
+Will identify FattKATT as being used by testlandia, poll for lastupdate changes every 750ms, will not beep when run, and will await updates for the regions Banana and NordFerretTon.
+
+Note that not all of these parameters need to be supplied, if -triggers is excluded it will still use trigger_list.txt, and if the others are excluded it will still prompt the user to supply them.
+
 ## Running FattKATT
 
 I suggest running [The latest release](https://github.com/Vleerian/FattKATT/releases/latest)
