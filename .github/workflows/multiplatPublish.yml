@@ -12,8 +12,8 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - uses: actions/checkout@v3
-        with:
-          repository: 'vleerian/NSDotNet'
+      with:
+        repository: 'vleerian/NSDotNet'
     - name: Setup .NET
       uses: actions/setup-dotnet@v2
       with:
@@ -31,8 +31,8 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - uses: actions/checkout@v3
-        with:
-          repository: 'vleerian/NSDotNet'
+      with:
+        repository: 'vleerian/NSDotNet'
     - name: Setup .NET
       uses: actions/setup-dotnet@v2
       with:
@@ -50,8 +50,8 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - uses: actions/checkout@v3
-        with:
-          repository: 'vleerian/NSDotNet'
+      with:
+        repository: 'vleerian/NSDotNet'
     - name: Setup .NET
       uses: actions/setup-dotnet@v2
       with:
