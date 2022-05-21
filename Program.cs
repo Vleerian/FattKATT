@@ -181,7 +181,9 @@ class FattKATTCommand : AsyncCommand<FattKATTCommand.Settings>
             }
 
             RegionAPI Region = Helpers.BetterDeserialize<RegionAPI>(await req.Content.ReadAsStringAsync());
-            if (current_time - Region.LastUpdate < 7200)
+            if(Region.LastUpdate == null)
+                Logger.Warning($"{trigger} is a new region.");
+            else if (current_time - Region.LastUpdate < 7200)
                 Logger.Warning($"{trigger} has already updated.");
             else
                 Sorted_Triggers.Add((Region.LastUpdate, trigger));
