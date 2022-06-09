@@ -136,7 +136,7 @@ class FattKATTCommand : AsyncCommand<FattKATTCommand.Settings>
         while(Triggers == null)
         {
             string[] triggers;
-            if(settings.Triggers == null)
+            if(settings.Triggers == null || settings.Triggers.Length == 0)
             {
                 Logger.Processing("Loading trigger regions from trigger_list.txt");
                 if(!File.Exists("./trigger_list.txt"))
