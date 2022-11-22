@@ -112,13 +112,13 @@ class FattKATTCommand : AsyncCommand<FattKATTCommand.Settings>
         #endregion
 
         if(settings.PollSpeed != null)
-            PollSpeed = settings.PollSpeed >= 750 ? (int)settings.PollSpeed : 750;
+            PollSpeed = settings.PollSpeed <= 750 ? (int)settings.PollSpeed : 750;
         else
             PollSpeed = AnsiConsole.Prompt(new TextPrompt<int>("How many miliseconds should KATT wait between NS API requests? ")
                 .DefaultValue(750)
                 .ValidationErrorMessage("[red]Invalid poll speed.[/]")
                 .Validate(s => s switch {
-                    < 600 => ValidationResult.Error("[red]Poll speed too low. Minimum 600[/]"),
+                    < 750 => ValidationResult.Error("[red]Poll speed too low. Minimum 750[/]"),
                     _ => ValidationResult.Success(),
                     })
                 );
@@ -172,6 +172,7 @@ class FattKATTCommand : AsyncCommand<FattKATTCommand.Settings>
         List<(double timestamp, string trigger)> Sorted_Triggers = new();
         foreach (string trigger in Triggers)
         {
+            await Task.Delay(PollSpeed);
             Logger.Request($"Getting LastUpdate for {trigger}");
             var req = await API.MakeRequest($"https://www.nationstates.net/cgi-bin/api.cgi?region={trigger}&q=lastupdate+name");
             if(req.StatusCode != HttpStatusCode.OK)

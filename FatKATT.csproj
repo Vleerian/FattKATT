@@ -18,7 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\NSDotnet\NSDotnet.csproj" />
+    <ProjectReference Include="..\NSDotNet\NSDotnet.csproj" />
   </ItemGroup>
 
 </Project>
