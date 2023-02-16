@@ -36,7 +36,7 @@ return await app.RunAsync(args);
 
 class FattKATTCommand : AsyncCommand<FattKATTCommand.Settings>
 {
-    const string VersionNumber = "1.3.2";
+    const string VersionNumber = "1.3.3";
 
     int PollSpeed = 750;
     NtpConnection ntpConnection;
@@ -102,9 +102,7 @@ class FattKATTCommand : AsyncCommand<FattKATTCommand.Settings>
                 Logger.Error($"NS replied with {(int)r.StatusCode}: {r.StatusCode.ToString()}, shutting down");
             return 1;
         }
-        int rl = CheckRatelimit(r);
-        if ( rl > 10 )
-            Logger.Warning($"The API has recieved {rl} requests from you.");
+        Logger.Info($"NS has seen {NSAPI.Instance.Requests_Seen} requests from you.");
 
         NationAPI Nation = Helpers.BetterDeserialize<NationAPI>(await r.Content.ReadAsStringAsync());
         API.UserAgent = $"FatKATT/{VersionNumber} (By 20XX, Atagait@hotmail.com - In Use by {UserNation})";
