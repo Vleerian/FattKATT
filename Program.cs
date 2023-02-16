@@ -110,13 +110,13 @@ class FattKATTCommand : AsyncCommand<FattKATTCommand.Settings>
         #endregion
 
         if(settings.PollSpeed != null)
-            PollSpeed = settings.PollSpeed <= 750 ? (int)settings.PollSpeed : 750;
+            PollSpeed = settings.PollSpeed <= 650 ? (int)settings.PollSpeed : 750;
         else
-            PollSpeed = AnsiConsole.Prompt(new TextPrompt<int>("How many miliseconds should KATT wait between NS API requests? ")
+            PollSpeed = AnsiConsole.Prompt(new TextPrompt<int>("How many miliseconds should FattKATT wait between NS API requests? ")
                 .DefaultValue(750)
                 .ValidationErrorMessage("[red]Invalid poll speed.[/]")
                 .Validate(s => s switch {
-                    < 750 => ValidationResult.Error("[red]Poll speed too low. Minimum 750[/]"),
+                    < 650 => ValidationResult.Error("[red]Poll speed too low. Minimum 650[/]"),
                     _ => ValidationResult.Success(),
                     })
                 );
@@ -167,6 +167,7 @@ class FattKATTCommand : AsyncCommand<FattKATTCommand.Settings>
 
         // Fetch the lastupdate data for all the regions in the trigger list
         Logger.Info("Sorting triggers.");
+        Logger.Info($"This will take ~{(Triggers.Count * PollSpeed) / 1000} seconds.");
         List<(double timestamp, string trigger)> Sorted_Triggers = new();
         foreach (string trigger in Triggers)
         {
