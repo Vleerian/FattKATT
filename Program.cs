@@ -144,7 +144,7 @@ class FattKATTCommand : AsyncCommand<FattKATTCommand.Settings>
                     Console.WriteLine("Press ENTER to continue."); Console.ReadLine();
                 }
                 triggers = File.ReadAllText("./trigger_list.txt").Split("\n", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-                triggers = triggers.Select(L=>L.Trim().Replace(' ','_')).Where(L => !L.StartsWith("#")).ToArray();
+                triggers = triggers.Select(L=>L.Split("#").First().Trim().Replace(' ','_')).Where(L => !string.IsNullOrEmpty(L) && !L.StartsWith("#")).ToArray();
                 if(triggers.Length == 0)
                 {
                     Logger.Error("Trigger list is empty. Please populate trigger_list.txt with list of trigger regions.");
