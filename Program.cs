@@ -139,12 +139,12 @@ class FattKATTCommand : AsyncCommand<FattKATTCommand.Settings>
                 Logger.Processing("Loading trigger regions from trigger_list.txt");
                 if(!File.Exists("./trigger_list.txt"))
                 {
-                    File.WriteAllText("./trigger_list.txt", "#trigger_list.txt\n#format is 1 trigger region per line.\n#lines can be commented out with hash marks.");
+                    File.WriteAllText("./trigger_list.txt", "#trigger_list.txt\n#format is 1 trigger region per line.\n#lines can be commented out with hash marks.\n#parts of lines after hash marks are also commented out.");
                     Logger.Info("File does not exist. Template created, please populate trigger_list.txt with list of trigger regions.");
                     Console.WriteLine("Press ENTER to continue."); Console.ReadLine();
                 }
                 triggers = File.ReadAllText("./trigger_list.txt").Split("\n", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-                triggers = triggers.Select(L=>L.Trim().Replace(' ','_')).Where(L => !L.StartsWith("#")).ToArray();
+                triggers = triggers.Select(L=>L.Split("#").First().Trim().Replace(' ','_')).Where(L => !string.IsNullOrEmpty(L) && !L.StartsWith("#")).ToArray();
                 if(triggers.Length == 0)
                 {
                     Logger.Error("Trigger list is empty. Please populate trigger_list.txt with list of trigger regions.");
