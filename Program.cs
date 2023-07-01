@@ -61,7 +61,7 @@ class FattKATTCommand : AsyncCommand<FattKATTCommand.Settings>
 
         // Set up NSDotNet
         var API = NSAPI.Instance;
-        API.UserAgent = $"FatKATT/{VersionNumber} (By 20XX, Atagait@hotmail.com)";
+        API.UserAgent = $"FatKATT/{VersionNumber} (By Vleerian, vleerian@outlook.com)";
         
         // The splash was cut out of the main function for the sake of readability
         PrintSplash();
@@ -105,7 +105,7 @@ class FattKATTCommand : AsyncCommand<FattKATTCommand.Settings>
         Logger.Info($"NS has seen {NSAPI.Instance.Status!.RequestsSeen} requests from you.");
 
         NationAPI Nation = Helpers.BetterDeserialize<NationAPI>(await r.Content.ReadAsStringAsync());
-        API.UserAgent = $"FatKATT/{VersionNumber} (By 20XX, Atagait@hotmail.com - In Use by {UserNation})";
+        API.UserAgent = $"FatKATT/{VersionNumber} (By Vleerian, vleerian@outlook.com - In Use by {UserNation})";
         Logger.Info($"You have identified as {Nation.fullname}.");
         #endregion
 
