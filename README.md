@@ -1,5 +1,5 @@
 # FattKATT
-![GitHub Workflow Status (branch)](https://img.shields.io/github/workflow/status/vleerian/fattkatt/multiplatPublish/main?style=for-the-badge) ![GitHub](https://img.shields.io/github/license/vleerian/fattkatt?style=for-the-badge) ![GitHub issues](https://img.shields.io/github/issues/vleerian/fattkatt?style=for-the-badge)
+![GitHub](https://img.shields.io/github/license/vleerian/fattkatt?style=for-the-badge) ![GitHub issues](https://img.shields.io/github/issues/vleerian/fattkatt?style=for-the-badge)
 
 <p align="center">
 	<img src="/assets/logo.png"><br>
