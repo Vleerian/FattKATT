@@ -35,7 +35,7 @@ return await app.RunAsync(args);
 
 class FattKATTCommand : AsyncCommand<FattKATTCommand.Settings>
 {
-    const string VersionNumber = "1.4.0";
+    const string VersionNumber = "1.4.1";
 
     int PollSpeed = 750;
 
