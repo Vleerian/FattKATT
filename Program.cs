@@ -5,7 +5,6 @@ using System.ComponentModel;
 using System.Text.Json.Serialization;
 using Spectre.Console;
 using Spectre.Console.Cli;
-using NtpClient;
 
 using FatKATT;
 using NSDotnet;
@@ -39,7 +38,6 @@ class FattKATTCommand : AsyncCommand<FattKATTCommand.Settings>
     const string VersionNumber = "1.4.0";
 
     int PollSpeed = 750;
-    NtpConnection ntpConnection;
 
     public sealed class Settings : CommandSettings
     {
@@ -161,9 +159,10 @@ class FattKATTCommand : AsyncCommand<FattKATTCommand.Settings>
         }
         #endregion
 
-        // The NTP timeserver is used because some people apparently don't have their system clock set properly
-        ntpConnection = new NtpConnection("pool.ntp.org");
-        int current_time = CurrentTimestamp();
+        // Fetch data for banana and warzone trinidad
+        var Banana = await API.GetRegion("banana");
+        var WZT = await API.GetRegion("warzone_trinidad");
+        bool Update_Running = Banana.LastUpdate > WZT.LastUpdate;
 
         // Fetch the lastupdate data for all the regions in the trigger list
         Logger.Info("Sorting triggers.");
@@ -183,10 +182,10 @@ class FattKATTCommand : AsyncCommand<FattKATTCommand.Settings>
             RegionAPI Region = Helpers.BetterDeserialize<RegionAPI>(await req.Content.ReadAsStringAsync());
             if(Region.LastUpdate == null)
                 Logger.Warning($"{trigger} is a new region.");
-            else if (current_time - Region.LastUpdate < 7200)
+            else if (Update_Running && Banana.LastUpdate > Region.LastUpdate)
                 Logger.Warning($"{trigger} has already updated.");
             else
-                Sorted_Triggers.Add((Region.LastUpdate, trigger));
+                Sorted_Triggers.Add(((double)Region.LastUpdate, trigger));
         }
         // Sort all the triggers by their lastupdate
         Sorted_Triggers.Sort((x, y) => x.timestamp.CompareTo(y.timestamp));
@@ -297,18 +296,6 @@ class FattKATTCommand : AsyncCommand<FattKATTCommand.Settings>
     {
         string strRatelimitSeen = r.Headers.GetValues("X-ratelimit-requests-seen").First();
         return Int32.Parse(strRatelimitSeen);
-    }
-
-    /// <summary>
-    /// I am told that a shocking number of people do not have their system time properly set
-    /// To that end, I poll the current UTC time through NTP to ensure accuracy.
-    /// <returns>The current epoch timestamp</returns>
-    /// </summary>
-    int CurrentTimestamp()
-    {
-        var utcNow = ntpConnection.GetUtc(); 
-        TimeSpan t = utcNow - new DateTime(1970, 1, 1);
-        return (int)t.TotalSeconds;
     }
 
     public void PrintSplash()
