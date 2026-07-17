@@ -52,9 +52,15 @@ class FattKATTCommand : AsyncCommand<FattKATTCommand.Settings>
 
         [CommandOption("-b|--beep"), Description("If you want FattKATT to beep when a target updates")]
         public bool? Beep { get; init; }
+
+        [CommandOption("-f|--first_updating_region"), Description("Override for the first updating region, useful when there is an update shuffle")]
+        public string? FirstUpdating { get; init; }
+
+        [CommandOption("-l|--last_updating_region"), Description("Override for the last updating region, useful when there is an update shuffle")]
+        public string? LastUpdating { get; init; }
     }
 
-    public async override Task<int> ExecuteAsync([NotNull] CommandContext context, [NotNull] Settings settings)
+    protected async override Task<int> ExecuteAsync([NotNull] CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
 
         // Set up NSDotNet
@@ -159,10 +165,15 @@ class FattKATTCommand : AsyncCommand<FattKATTCommand.Settings>
         }
         #endregion
 
-        // Fetch data for banana and warzone trinidad
-        var Banana = await API.GetRegion("banana");
-        var WZT = await API.GetRegion("warzone_trinidad");
-        bool Update_Running = Banana.LastUpdate > WZT.LastUpdate;
+        // Fetch data for the first and last regions
+        /* TODO: Future Maintainer, creating and updating a config file containing
+        the most recently set FirstUpdating and LastUpdating region, or using the
+        daily data dump, or using SpyGlass' spreadsheet to automatically pull the
+        first and last updating regions is likely the smart thing to do. Idk man,
+        do what thou wilt is the whole of the law.*/
+        var FirstUpdating = await API.GetRegion(settings.FirstUpdating ?? "l63b");
+        var LastUpdating = await API.GetRegion(settings.LastUpdating ?? "warzone_tomb_of_the_giants");
+        bool Update_Running = FirstUpdating.LastUpdate > LastUpdating.LastUpdate;
 
         // Fetch the lastupdate data for all the regions in the trigger list
         Logger.Info("Sorting triggers.");
@@ -182,7 +193,7 @@ class FattKATTCommand : AsyncCommand<FattKATTCommand.Settings>
             RegionAPI Region = Helpers.BetterDeserialize<RegionAPI>(await req.Content.ReadAsStringAsync());
             if(Region.LastUpdate == null)
                 Logger.Warning($"{trigger} is a new region.");
-            else if (Update_Running && Banana.LastUpdate <= Region.LastUpdate)
+            else if (Update_Running && FirstUpdating.LastUpdate <= Region.LastUpdate)
                 Logger.Warning($"{trigger} has already updated.");
             else
                 Sorted_Triggers.Add(((double)Region.LastUpdate, trigger));
